@@ -127,3 +127,33 @@ const loginUser = asyncHandler(async (req, res) => {
             )
         )
 })
+
+// * Now for the logout user
+
+const logoutUser =asyncHandler(async(req,res)=>{
+    await User.findByIDandUpdate(
+        req.user._id,
+        {
+            $unset:{
+                refreshToken:1          // remove the user
+            }
+        },
+        {
+            new:true
+        }
+    )
+})
+
+export {
+    registerUser,
+    loginUser,
+    logoutUser,
+    refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateAcoountDetails,
+    updateUserAvtar,
+    updateUserCoverImage,
+    getUserChannelProfile,
+    getWatchHistory
+}
