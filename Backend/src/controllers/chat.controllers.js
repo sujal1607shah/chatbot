@@ -1,16 +1,3 @@
-/**
- * src/controllers/chatController.js
- *
- * Rule-based Chat Controller — NO external AI calls.
- * - Stores messages in Chat model (one document per session).
- * - Simple intent/keyword matching for bot replies.
- * - Exposes: sendMessage, getHistory, createSession, deleteSession, renameSession
- *
- * Requires:
- *   import { protect } in routes to set req.user
- *   Chat model: src/models/chatModel.js (as provided earlier)
- */
-
 import { Chat } from "../models/Chat.model.js";
 
 /* ---------------------------
@@ -20,36 +7,6 @@ import { Chat } from "../models/Chat.model.js";
 // Normalize text
 const norm = (s = "") => s.trim().toLowerCase();
 
-// Simple FAQ / knowledge base (you can extend this)
-const FAQ = [
-  {
-    keywords: ["hello", "hi", "hey"],
-    reply: "Hello! 👋 How can I help you today?",
-  },
-  {
-    keywords: ["how are you", "how r you", "how are u"],
-    reply: "I'm a bot — always ready to help! How can I assist you?",
-  },
-  {
-    keywords: ["help", "support"],
-    reply:
-      "I can answer simple questions, save chat history, and echo your messages. Try typing 'faq' or ask for 'time'.",
-  },
-  {
-    keywords: ["time", "what time", "current time"],
-    reply: () => `Current server time is: ${new Date().toLocaleString()}`,
-  },
-  {
-    keywords: ["bye", "goodbye", "see you"],
-    reply: "Goodbye! If you need me again, just start a new chat. 👋",
-  },
-  {
-    keywords: ["faq", "questions"],
-    reply: "You can ask about registration, login, or chat features. Example: 'How do I reset my password?'",
-  },
-];
-
-// inside your chatController (above handlers)
 const sujalProfile = {
   name: "Sujal Shah",
   profession: "Full-Stack Developer & Computer Engineering Student",
@@ -60,9 +17,32 @@ const sujalProfile = {
     { name: "Employee Registration & PDF Generator", desc: "CRUD app with client-side validation and PDF exports." }
   ],
   bio: "I build AI-assisted web applications with a focus on clean UI and robust backend architecture. I prefer dark/black backgrounds for UI and photos.",
-  photoPreference: "dark/black background"
+  contact: "You can reach out to me for collaborations!"
 };
 
+// Simple FAQ / knowledge base
+const FAQ = [
+  {
+    keywords: ["hello", "hi", "hey"],
+    reply: "Hello! 👋 I am Sujal's AI assistant. Ask me about Sujal's skills, projects, or background!",
+  },
+  {
+    keywords: ["how are you"],
+    reply: "I'm functioning perfectly! Ready to tell you all about Sujal.",
+  },
+  {
+    keywords: ["help", "support"],
+    reply: "Try asking: 'Who is Sujal?', 'What skills does he have?', 'Show me his projects', or 'What is his tech stack?'.",
+  },
+  {
+    keywords: ["time", "what time", "current time"],
+    reply: () => `Current server time is: ${new Date().toLocaleString()}`,
+  },
+  {
+    keywords: ["bye", "goodbye"],
+    reply: "Goodbye! Feel free to come back if you need more info about Sujal. 👋",
+  },
+];
 
 /**
  * Determine reply from the message using rules.
@@ -71,7 +51,29 @@ const sujalProfile = {
 const getRuleBasedReply = (message) => {
   const m = norm(message);
 
-  // 1) exact phrase matches / keywords
+  // 1) Check for Profile Questions
+  if (m.includes("who is sujal") || m.includes("about sujal") || m.includes("tell me about yourself") || m.includes("who are you")) {
+    return `${sujalProfile.name} is a ${sujalProfile.profession}. ${sujalProfile.bio}`;
+  }
+
+  if (m.includes("skill") || m.includes("stack") || m.includes("technolog")) {
+    return `Sujal's technical skills include: ${sujalProfile.skills.join(", ")}.`;
+  }
+
+  if (m.includes("project") || m.includes("work")) {
+    const projectList = sujalProfile.projects.map(p => `• ${p.name}: ${p.desc}`).join("\n");
+    return `Here are some of Sujal's key projects:\n${projectList}`;
+  }
+
+  if (m.includes("contact") || m.includes("email") || m.includes("reach")) {
+    return sujalProfile.contact;
+  }
+
+  if (m.includes("photo") || m.includes("picture")) {
+    return `Sujal prefers dark/black backgrounds for his photos.`;
+  }
+
+  // 2) exact phrase matches / keywords from FAQ
   for (const item of FAQ) {
     for (const kw of item.keywords) {
       if (m.includes(kw)) {
@@ -80,35 +82,17 @@ const getRuleBasedReply = (message) => {
     }
   }
 
-  // 2) simple patterns: question about registration/login
-  if (m.includes("register") || m.includes("signup") || m.includes("sign up")) {
-    return "To register, use the Register button and provide your name, email and password. If you'd like, I can create a demo request for you.";
+  // 3) simple patterns: question about registration/login
+  if (m.includes("register") || m.includes("signup")) {
+    return "To register, use the Register button and provide your name, email and password.";
   }
 
-  if (m.includes("login") || m.includes("log in")) {
-    return "To log in, use your registered email and password at the login page. If you forgot your password, ask for 'reset password'.";
+  if (m.includes("login")) {
+    return "To log in, use your registered email and password at the login page.";
   }
 
-  if (m.includes("reset") && m.includes("password")) {
-    return "Password reset is not implemented in this demo. In production you'd receive a reset link by email.";
-  }
-
-  // 3) small talk / utilities
-  if (m.startsWith("calculate ")) {
-    try {
-      // Very simple and limited calculator (careful: eval-like risks avoided)
-      const expr = message.slice("calculate ".length).replace(/[^0-9+\-*/().\s]/g, "");
-      // eslint-disable-next-line no-new-func
-      const result = new Function(`return (${expr})`)();
-      if (result === undefined) throw new Error("bad expression");
-      return `Result: ${result}`;
-    } catch (e) {
-      return "I couldn't calculate that. Please send a valid arithmetic expression, e.g. `calculate 2+2*3`.";
-    }
-  }
-
-  // 4) fallback: echo + suggestion
-  return `You said: "${message}". I don't fully understand that yet — try asking something simpler (e.g., 'help', 'time', 'faq').`;
+  // 4) fallback
+  return `I'm not sure about that. Try asking about Sujal's "skills", "projects", or "bio".`;
 };
 
 /* ---------------------------
@@ -118,12 +102,18 @@ const getRuleBasedReply = (message) => {
 /**
  * POST /api/chat/send
  * Body: { message: string, sessionId?: string }
- * Protected route: req.user available
  */
 export const sendMessage = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { message, sessionId } = req.body;
+    let { sessionId } = req.params;
+    const body = req.body || {};
+    const { message } = body;
+
+    // Use body sessionId if params one is invalid or missing/mismatched
+    if (!sessionId || sessionId === 'undefined' || sessionId === 'null') {
+      sessionId = body.sessionId;
+    }
 
     if (!message || String(message).trim().length === 0) {
       return res.status(400).json({ message: "Message is required" });
@@ -135,27 +125,25 @@ export const sendMessage = async (req, res) => {
       chat = await Chat.findOne({ _id: sessionId, user: userId });
       if (!chat) return res.status(404).json({ message: "Chat session not found" });
     } else {
+      // Fallback: create new session if no ID provided (though usually separate endpoint)
       chat = await Chat.create({ user: userId, messages: [] });
     }
 
     // push user message
-   const userMsg = { sender: "user", message: message };
-chat.messages.push(userMsg);
-    await chat.save();
+    const userMsg = { sender: "user", message: message };
+    chat.messages.push(userMsg);
 
+    // Generate Bot Reply
     const botText = getRuleBasedReply(message);
+    const botMsg = { sender: "bot", message: botText };
+    chat.messages.push(botMsg);
 
-    // push bot message
-   const botMsg = { sender: "bot", message: botText };
-chat.messages.push(botMsg);
     await chat.save();
 
-    // return useful data to client
-    return res.json({
+    return res.status(200).json({
       sessionId: chat._id,
       reply: botText,
-      // include last few messages to render conversation without an extra roundtrip
-      messages: chat.messages.slice(-10),
+      messages: chat.messages // Return all messages to sync state if needed
     });
   } catch (error) {
     console.error("chatController.sendMessage error:", error);
@@ -165,36 +153,20 @@ chat.messages.push(botMsg);
 
 /**
  * GET /api/chat/history
- * Query params:
- *   - sessionId (optional): fetch messages for a session
- *   - page, limit (optional) for pagination inside messages
- * If no sessionId, returns a list of sessions (summary).
  */
 export const getHistory = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { sessionId } = req.query;
-    let { page = 1, limit = 50 } = req.query;
-    page = parseInt(page, 10);
-    limit = parseInt(limit, 10);
+    const { sessionId } = req.params;
 
     if (sessionId) {
       const chat = await Chat.findOne({ _id: sessionId, user: userId });
       if (!chat) return res.status(404).json({ message: "Session not found" });
 
-      // simple in-array pagination (ok for small sessions)
-      const total = chat.messages.length;
-      const start = Math.max(total - page * limit, 0);
-      const end = Math.max(total - (page - 1) * limit, 0);
-      const messages = chat.messages.slice(start, end);
-
       return res.json({
         sessionId: chat._id,
         sessionTitle: chat.sessionTitle,
-        totalMessages: total,
-        page,
-        limit,
-        messages,
+        messages: chat.messages,
       });
     }
 
@@ -205,14 +177,13 @@ export const getHistory = async (req, res) => {
       .limit(100);
 
     const summary = sessions.map((s) => ({
-      sessionId: s._id,
-      sessionTitle: s.sessionTitle,
+      id: s._id,
+      title: s.sessionTitle,
       updatedAt: s.updatedAt,
-      totalMessages: s.messages.length,
       lastMessage: s.messages.length ? s.messages[s.messages.length - 1] : null,
     }));
 
-    return res.json({ sessions: summary });
+    return res.json(summary);
   } catch (error) {
     console.error("chatController.getHistory error:", error);
     return res.status(500).json({ message: "Server error" });
@@ -221,19 +192,17 @@ export const getHistory = async (req, res) => {
 
 /**
  * POST /api/chat/session
- * Body: { title?: string }
- * Create a new session (returns sessionId)
  */
 export const createSession = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { title } = req.body;
+    const { title } = req.body || {};
     const chat = await Chat.create({
       user: userId,
       sessionTitle: title ? String(title).trim() : "New Chat",
       messages: [],
     });
-    return res.status(201).json({ sessionId: chat._id, sessionTitle: chat.sessionTitle });
+    return res.status(201).json({ id: chat._id, title: chat.sessionTitle });
   } catch (error) {
     console.error("chatController.createSession error:", error);
     return res.status(500).json({ message: "Server error" });
@@ -242,12 +211,11 @@ export const createSession = async (req, res) => {
 
 /**
  * DELETE /api/chat/session/:id
- * Delete a chat session for the logged-in user
  */
 export const deleteSession = async (req, res) => {
   try {
     const userId = req.user._id;
-    const sessionId = req.params.id;
+    const sessionId = req.params.sessionId;
     const deleted = await Chat.findOneAndDelete({ _id: sessionId, user: userId });
     if (!deleted) return res.status(404).json({ message: "Session not found" });
     return res.json({ message: "Session deleted" });
@@ -258,25 +226,25 @@ export const deleteSession = async (req, res) => {
 };
 
 /**
- * PATCH /api/chat/session/:id/rename
- * Body: { title: "New title" }
+ * PUT /api/chat/session/:id
  */
 export const renameSession = async (req, res) => {
   try {
     const userId = req.user._id;
-    const sessionId = req.params.id;
-    const { title } = req.body;
-    if (!title || String(title).trim().length === 0) {
+    const sessionId = req.params.sessionId;
+    const { name } = req.body || {};
+
+    if (!name || String(name).trim().length === 0) {
       return res.status(400).json({ message: "Title is required" });
     }
 
     const chat = await Chat.findOne({ _id: sessionId, user: userId });
     if (!chat) return res.status(404).json({ message: "Session not found" });
 
-    chat.sessionTitle = String(title).trim();
+    chat.sessionTitle = String(name).trim();
     await chat.save();
 
-    return res.json({ sessionId: chat._id, sessionTitle: chat.sessionTitle });
+    return res.json({ id: chat._id, title: chat.sessionTitle });
   } catch (error) {
     console.error("chatController.renameSession error:", error);
     return res.status(500).json({ message: "Server error" });

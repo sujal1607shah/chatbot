@@ -7,21 +7,25 @@ const chatSchema = mongoose.Schema(
             ref: 'user',
             required: true
         },
+        sessionTitle: {
+            type: String,
+            default: "New Chat"
+        },
 
-        messages:[
+        messages: [
             {
-                sender:{
-                    type:String,
-                    enum:["user","bot"],
-                    required:true,
+                sender: {
+                    type: String,
+                    enum: ["user", "bot"],
+                    required: true,
                 },
-                message:{
-                    type:String,
-                    required:true
+                message: {
+                    type: String,
+                    required: true
                 },
-                time:{
-                    type:Date,
-                    default:Date.now
+                time: {
+                    type: Date,
+                    default: Date.now
                 }
             }
         ]
@@ -29,4 +33,4 @@ const chatSchema = mongoose.Schema(
     { timestamps: true }
 );
 
-export const Chat = mongoose.model("Chat",chatSchema)
+export const Chat = mongoose.model("Chat", chatSchema)

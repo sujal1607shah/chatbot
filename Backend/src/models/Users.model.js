@@ -36,7 +36,7 @@ userSchema.methods.generateAccessToken = function () {
       username: this.username
     },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "15m" }
+    { expiresIn: "1d" }
   );
 };
 
